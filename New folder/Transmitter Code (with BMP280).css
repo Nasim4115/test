@@ -1,0 +1,53 @@
+#include <Wire.h>
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BMP280.h>
+#include <SPI.h>
+#include <LoRa.h>
+
+// BMP280 I2C Address
+#define BMP280_ADDRESS 0x76
+
+// LoRa Pins
+#define LORA_SS 10
+#define LORA_RST 9
+#define LORA_DIO0 2
+
+// Create BMP280 object
+Adafruit_BMP280 bmp;
+
+void setup() {
+  // Initialize Serial Monitor
+  Serial.begin(9600);
+
+  // Initialize BMP280 sensor
+  if (!bmp.begin(BMP280_ADDRESS)) {
+    Serial.println("BMP280 sensor not found!");
+    while (1);
+  }
+  Serial.println("BMP280 initialized.");
+
+  // Initialize LoRa
+  if (!LoRa.begin(433E6)) {  // Set LoRa frequency (433 MHz as an example)
+    Serial.println("LoRa initialization failed!");
+    while (1);
+  }
+  Serial.println("LoRa initialized.");
+}
+
+void loop() {
+  // Read sensor data
+  float temperature = bmp.readTemperature();
+  float pressure = bmp.readPressure() / 100.0;  // Convert to hPa
+
+  // Create a data string
+  String dataString = "T:" + String(temperature, 2) + "C, P:" + String(pressure, 2) + "hPa";
+
+  // Transmit data
+  Serial.println("Transmitting: " + dataString);
+  LoRa.beginPacket();
+  LoRa.print(dataString);
+  LoRa.endPacket();
+
+  // Delay before next transmission
+  delay(1000);
+}
