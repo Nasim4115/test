@@ -1,0 +1,55 @@
+#include <SPI.h>
+#include <LoRa.h>
+#include <SD.h>
+
+// LoRa Pins
+#define LORA_SS 10
+#define LORA_RST 9
+#define LORA_DIO0 2
+
+// SD Card Chip Select Pin
+#define SD_CS 4
+
+void setup() {
+  // Initialize Serial Monitor
+  Serial.begin(9600);
+
+  // Initialize SD card
+  if (!SD.begin(SD_CS)) {
+    Serial.println("SD card initialization failed!");
+    while (1);
+  }
+  Serial.println("SD card initialized.");
+
+  // Initialize LoRa
+  if (!LoRa.begin(433E6)) {  // Set LoRa frequency (433 MHz as an example)
+    Serial.println("LoRa initialization failed!");
+    while (1);
+  }
+  Serial.println("LoRa Receiver initialized.");
+}
+
+void loop() {
+  // Check for incoming packets
+  int packetSize = LoRa.parsePacket();
+  if (packetSize) {
+    // Read incoming data
+    String incomingData = "";
+    while (LoRa.available()) {
+      incomingData += (char)LoRa.read();
+    }
+
+    // Print received data
+    Serial.println("Received: " + incomingData);
+
+    // Save data to SD card
+    File dataFile = SD.open("data.txt", FILE_WRITE);
+    if (dataFile) {
+      dataFile.println(incomingData);
+      dataFile.close();
+      Serial.println("Data saved to SD card.");
+    } else {
+      Serial.println("Failed to write to SD card!");
+    }
+  }
+}
